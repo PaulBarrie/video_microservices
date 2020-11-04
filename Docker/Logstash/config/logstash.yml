@@ -1,0 +1,14 @@
+pipeline:
+    batch: 
+        size: 
+        delay: 50
+    java_execution: true
+    unsafe_shutdown: true
+    plugin_classloaders: true
+config: 
+    reload:
+        automatic: true
+        interval: 5s
+    debug: true
+
+path.logs: /tmp/logstash/logs

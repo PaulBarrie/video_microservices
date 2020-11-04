@@ -1,0 +1,142 @@
+version: '3.4'
+
+services:
+
+  #service for yt api
+  api:
+    build:
+      context: ./yt_api
+    volumes:
+        - ./yt_api:/go/src/api 
+        #- ./videos_store:/home/videos_store 
+
+    env_file: 
+       - .env
+    ports:
+      - "3000:3000"
+    #restart: unless-stopped
+    depends_on: 
+      - msql
+      - minio
+    networks: 
+      - backend
+    command: bash -c "go run main.go"
+    container_name: ${API_CONTAINER}
+  #service for database
+  msql:
+    build:
+      context: ./Docker/MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PWD}
+      MYSQL_DATABASE: ${DB_NAME}
+      # MYSQL_USER: ${DB_USER}
+      # MYSQL_PASSWORD: ${DB_USER_PWD}
+    ports:
+      - "3308:3306"    
+    networks: 
+       - backend
+    volumes: 
+      - ./data:/var/lib/mysql
+    command: --wait-timeout=28800
+    container_name: ${MYSQL_CONTAINER}
+  
+  minio:
+    image: minio/minio
+    ports:
+        - "9999:9000"
+    env_file: minio.env
+    volumes:
+        - ./videos_store:/export
+    command: minio server /export
+    container_name: ${MINIO_CONTAINER}
+    networks:
+      backend:
+        aliases: 
+          - ${MINIO_CONTAINER}
+    container_name: ${MINIO_CONTAINER}
+  
+  elasticsearch:
+    build: ./Docker/Elasticsearch
+    volumes:
+      - ./elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - cluster.name=laradock-cluster
+      - node.name=laradock-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.initial_master_nodes=laradock-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "${ELASTICSEARCH_HOST_HTTP_PORT}:9200"
+      - "${ELASTICSEARCH_HOST_TRANSPORT_PORT}:9300"
+    container_name: ${ES_CONTAINER}
+
+
+    
+  #service for SMTP
+  smtp:
+    image: mailu/postfix
+    environment: 
+      SMTP_SERVER: ${MAIL_SRV}
+      SMTP_PORT: ${MAIL_PORT}
+      SMTP_USERNAME: ${MAIL_USERNAME} 
+      SMTP_PASSWORD: ${MAIL_PWD}
+      SERVER_HOSTNAME: ${MAIL_HOSTNAME}
+    ports: 
+      - ${MAIL_PORT}:${MAIL_PORT}
+    networks: 
+      - backend
+    container_name: ${SMTP_CONTAINER}
+    
+  video_encoder:
+    build: 
+      context: ./video_encoder
+    depends_on: 
+      - minio
+    volumes:
+      - ./video_encoder:/home/api 
+      - ./videos_store:/home/videos_store 
+    env_file: 
+       - .env
+    ports:
+      - "3001:3000"
+    #restart: unless-stopped
+    networks: 
+      - backend
+    working_dir: /go/src/api
+    command: bash -c "go run main.go"
+    container_name: myyt-encoder
+  
+  # SERVICES FOR DEV 
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.9.3
+    environment:
+      SERVER_NAME: kibana.example.org
+      ELASTICSEARCH_HOSTS: http://${ES_CONTAINER}
+  
+
+  #service for adminer
+  adminer:
+    image: adminer:4.7
+    depends_on:
+      - msql
+    environment:
+      ADMINER_DEFAULT_DB_DRIVER: mysql
+      ADMINER_DEFAULT_DB_HOST: ${DB_ADDRESS}
+      ADMINER_DEFAULT_DB_NAME: ${DB_NAME}
+      ADMINER_DESIGN: nette
+      ADMINER_PLUGINS: tables-filter tinymce
+    ports:
+      - 8000:8000
+    
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+    # external: true
