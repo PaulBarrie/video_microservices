@@ -8,13 +8,12 @@ services:
       context: ./api
     volumes:
         - ./api:/go/src/api 
-        #- ./videos_store:/home/videos_store 
 
     env_file: 
        - .env
     ports:
-      - "3000:3000"
-    #restart: unless-stopped
+      - "${API_PORT}:${API_PORT}"
+      - "1001:5858"
     depends_on: 
       - msql
       - minio
@@ -22,6 +21,7 @@ services:
       - backend
     command: bash -c "go run main.go"
     container_name: ${API_CONTAINER}
+
   #service for database
   msql:
     build:
@@ -92,7 +92,7 @@ services:
     container_name: ${SMTP_CONTAINER}
     
   video_encoder:
-    build: 
+    build:  
       context: ./video_encoder
     depends_on: 
       - minio
@@ -102,7 +102,11 @@ services:
     env_file: 
        - .env
     ports:
-      - "3001:3000"
+      - "${ENCODER_PORT}:${ENCODER_PORT}"
+      - "1000:5858"
+    depends_on:
+      - minio
+      - api
     #restart: unless-stopped
     networks: 
       - backend

@@ -16,6 +16,7 @@ COPY . /usr/local/go/src
 COPY go.mod go.sum ./ 
 
 # Vendoring dependencies
+RUN go mod tidy
 RUN go mod vendor
 COPY . .
 # RUN mv config controllers docs models router vendor
@@ -33,4 +34,4 @@ COPY . .
 ADD  . /go/src/api
 #RUN mv config controllers docs models router vendor
 
-EXPOSE 3000
+EXPOSE 3001

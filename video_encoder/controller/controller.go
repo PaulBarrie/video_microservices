@@ -3,13 +3,20 @@ package controller
 import (
 	"config"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 
 	minio "github.com/minio/minio-go/v7"
 )
+
+type response struct {
+	message string `json:"message"`
+}
 
 // EncodeVideo allows to encode video in Minio
 func EncodeVideo(w http.ResponseWriter, r *http.Request) {
@@ -33,9 +40,10 @@ func EncodeVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	/* Send response */
-	// js, _ := json.Marshal(utils.RespVideo{"ok", video})
+	js, _ := json.Marshal(response{"Video successfully encoded"})
 
 	w.WriteHeader(http.StatusCreated)
+	w.Write(js)
 }
 
 func encodeInMinio(bucketName string, maxQual int, fileName string) error {
@@ -48,14 +56,25 @@ func encodeInMinio(bucketName string, maxQual int, fileName string) error {
 	}
 	for quals[cmpt] < maxQual {
 		// Encode to the format specified by quals
-		target := "/tmp/test.mp4"
+		target := fmt.Sprintf("%d_%s", quals[cmpt], fileName)
 		cmd := fmt.Sprintf("ffmpeg -i %s -vf scale=-1:%d -c:v libx264 -crf 18 -preset veryslow -c:a copy %s", fileLoc, quals[cmpt], target)
+		_, err := exec.Command("sh", "-c", cmd).Output()
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(target) // For read access.
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		// Save in minio
-		info, err := cli.PutObject(context.Background(), bucketName, fmt.Sprintf("%d_%s", quals[cmpt], fileName), file, fileStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
+		info, err := (*config.Api.Minio).PutObject(context.Background(), bucketName, target, file, -1 /*fileStat.Size()*/, minio.PutObjectOptions{ContentType: "application/octet-stream"})
 		if err != nil {
 			log.Println(err)
 			return err
 		}
+		log.Printf("Saved object: %s", info)
 		cmpt++
 	}
 	return nil

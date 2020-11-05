@@ -1,7 +1,6 @@
 package video
 
 import (
-	"encoding/json"
 	"bytes"
 	"config"
 	"context"
@@ -13,6 +12,7 @@ import (
 	"log"
 	"models"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -60,7 +60,7 @@ func upload(w http.ResponseWriter, r *http.Request, video models.Video) (models.
 	if err != nil {
 		return video, err
 	}
-	err = go sendEncodeRequest(path, details.Quality, video.Name)
+	go sendEncodeRequest(path, details.Quality, video.Name)
 	if err != nil {
 		return video, err
 	}
@@ -144,31 +144,27 @@ func makeBucketName(name string, idUsr int, idVid int, createdAt string) (string
 
 }
 
-func sendEncodeRequest(bucketName string, format int64, filename string) error {
+func sendEncodeRequest(bucketName string, format int64, filename string) {
 	log.Println("Sending encode request")
 
 	formData := url.Values{
 		"bucket_name": {bucketName},
-		"format": {format},
-		"filename": {filename}
+		"format":      {fmt.Sprintf("%d", format)},
+		"filename":    {filename},
 	}
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer reqBody.Close()
 
-	resp, err := http.PostForm("http://video_encoder/encode", formData)
+	resp, err := http.PostForm("http://myyt-encoder:3001/encode/", formData)
 	if err != nil {
 		log.Println(err)
-		return err
+		return
 	}
 	defer resp.Body.Close()
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-
-	log.Println(result["form"])
-	return nil
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Printf("Request result: %s \n", string(body))
 }
 
 /* Utils for query */
