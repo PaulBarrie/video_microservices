@@ -3,11 +3,11 @@ package controller
 import (
 	"config"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/PaulBarrie/video_encoder/config"
 	minio "github.com/minio/minio-go/v7"
 )
 
@@ -42,26 +42,36 @@ func encodeInMinio(bucketName string, maxQual int, fileName string) error {
 	quals := []int{240, 360, 480, 720, 1080}
 	cmpt := 0
 	log.Printf("encode in minio")
-	err := getFileInBucket(bucketName)
+	fileLoc, err := getFileInBucket(bucketName)
 	if err != nil {
 		return err
 	}
 	for quals[cmpt] < maxQual {
+		// Encode to the format specified by quals
+		target := "/tmp/test.mp4"
+		cmd := fmt.Sprintf("ffmpeg -i %s -vf scale=-1:%d -c:v libx264 -crf 18 -preset veryslow -c:a copy %s", fileLoc, quals[cmpt], target)
+		// Save in minio
+		info, err := cli.PutObject(context.Background(), bucketName, fmt.Sprintf("%d_%s", quals[cmpt], fileName), file, fileStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 		cmpt++
 	}
 	return nil
 }
 
-func getFileInBucket(bucketName string) error {
+func getFileInBucket(bucketName string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	objectCh := (*config.Api.Minio).ListObjects(ctx, "mybucket", minio.ListObjectOptions{
+	objectCh := (*config.Api.Minio).ListObjects(ctx, "mybucket", minio.ListObjectsOptions{
 		Recursive: true,
 	})
 	for object := range objectCh {
 		if object.Err != nil {
 			log.Println(object.Err)
+			return "", object.Err
 		}
 		log.Println(object)
 		break
@@ -73,5 +83,5 @@ func getFileInBucket(bucketName string) error {
 	// 	fmt.Println(err)
 	// 	return err
 	// }
-	return nil
+	return "", nil
 }

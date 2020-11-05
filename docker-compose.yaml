@@ -5,9 +5,9 @@ services:
   #service for yt api
   api:
     build:
-      context: ./yt_api
+      context: ./api
     volumes:
-        - ./yt_api:/go/src/api 
+        - ./api:/go/src/api 
         #- ./videos_store:/home/videos_store 
 
     env_file: 

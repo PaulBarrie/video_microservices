@@ -1,0 +1,27 @@
+basePath: /
+host: localhost:3000
+info:
+  contact:
+    email: barrie_p@etna-alternance.net
+    name: barrie_p
+  description: This is a sample service for managing orders
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Youtube API
+  version: "1.0"
+paths:
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Get details of all orders
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Create user
+      tags:
+      - orders
+swagger: "2.0"

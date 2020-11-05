@@ -1,4 +1,4 @@
-module github.com/PaulBarrie/video_encode
+module github.com/PaulBarrie/video_microservices
 
 go 1.15
 
