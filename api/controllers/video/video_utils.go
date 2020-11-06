@@ -153,7 +153,7 @@ func sendEncodeRequest(bucketName string, format int64, filename string) {
 		"filename":    {filename},
 	}
 
-	resp, err := http.PostForm("http://myyt-encoder:3001/encode/", formData)
+	resp, err := http.PostForm("http://video_encoder:3001/encode", formData)
 	if err != nil {
 		log.Println(err)
 		return
