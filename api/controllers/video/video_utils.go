@@ -12,7 +12,6 @@ import (
 	"log"
 	"models"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -36,7 +35,6 @@ func upload(w http.ResponseWriter, r *http.Request, video models.Video) (models.
 		return video, err
 	}
 	video.Source = path
-	//video.Duration = header.Size
 	// Copy the file data to my buffer
 	io.Copy(&buf, file)
 	defer buf.Reset()
@@ -45,7 +43,6 @@ func upload(w http.ResponseWriter, r *http.Request, video models.Video) (models.
 	if err != nil {
 		return video, err
 	}
-	defer os.Remove(tmpLoc)
 	details, err := getVideoDetails(tmpLoc)
 	if err != nil {
 		return video, err
@@ -56,11 +53,16 @@ func upload(w http.ResponseWriter, r *http.Request, video models.Video) (models.
 		return video, err
 	}
 	defer os.Remove(tmpLoc)
-	err = saveInMinio(tmpFile, path, video.Name, details.Quality)
+	sFile, err := saveInMinio(tmpFile, path, video.Source, details.Quality)
 	if err != nil {
 		return video, err
 	}
-	go sendEncodeRequest(path, details.Quality, video.Name)
+	// Remove temporary files from
+	err = os.RemoveAll("/tmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+	go sendEncodeRequest(path, details.Quality, sFile, r)
 	if err != nil {
 		return video, err
 	}
@@ -69,16 +71,21 @@ func upload(w http.ResponseWriter, r *http.Request, video models.Video) (models.
 
 func saveFile(buf *bytes.Buffer, path string) error {
 	//file, err := os.OpenFile(path, os.O_CREATE, 0666) //os.O_WRONLY|os.O_TRUNC|
-	p_path := strings.Split(path, "/")
-	p_pathjoin := strings.Join(p_path[:len(p_path)-1], "/")
-	if _, err := os.Stat(p_pathjoin); os.IsNotExist(err) {
-		err = os.Mkdir(p_pathjoin, 0755)
+	err := os.MkdirAll("/tmp", 0777)
+	if err != nil {
+		return err
+	}
+	pPath := strings.Split(path, "/")
+	pPathjoin := strings.Join(pPath[:len(pPath)-1], "/")
+
+	if _, err := os.Stat(pPathjoin); os.IsNotExist(err) {
+		err = os.Mkdir(pPathjoin, 0755)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := ioutil.WriteFile(path, buf.Bytes(), 0644)
+	err = ioutil.WriteFile(path, buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -89,49 +96,49 @@ func saveFile(buf *bytes.Buffer, path string) error {
 func getVideoDetails(path string) (utils.VideoDetails, error) {
 	re := regexp.MustCompile("[0-9]+")
 	// Get quality
-	cmd_q := fmt.Sprintf("ffprobe -v error -show_format -show_streams %s | grep pix_fmt", path)
-	out_q, err := exec.Command("sh", "-c", cmd_q).Output()
+	cmdQ := fmt.Sprintf("ffprobe -v error -show_format -show_streams %s | grep pix_fmt", path)
+	outQ, err := exec.Command("sh", "-c", cmdQ).Output()
 	if err != nil {
 		return utils.VideoDetails{0, 0}, err
 	}
-	quality := re.FindAllString(string(out_q), -1)[0]
-	q_int, _ := strconv.Atoi(quality)
+	quality := re.FindAllString(string(outQ), -1)[0]
+	qInt, _ := strconv.Atoi(quality)
 	//Get duration
-	cmd_d := fmt.Sprintf("ffprobe -v error -show_format -show_streams %s | grep duration | tail -1", path)
-	out_d, err := exec.Command("sh", "-c", cmd_d).Output()
+	cmdD := fmt.Sprintf("ffprobe -v error -show_format -show_streams %s | grep duration | tail -1", path)
+	outD, err := exec.Command("sh", "-c", cmdD).Output()
 	if err != nil {
 		return utils.VideoDetails{0, 0}, err
 	}
-	duration := strings.Split(string(out_d), "=")[1]
+	duration := strings.Split(string(outD), "=")[1]
 	duration = duration[:len(duration)-1]
-	d_int, err := strconv.ParseFloat(duration, 64)
+	dInt, err := strconv.ParseFloat(duration, 64)
 	if err != nil {
 		return utils.VideoDetails{0, 0}, err
 	}
-	return utils.VideoDetails{d_int, int64(q_int)}, nil
+	return utils.VideoDetails{dInt, int64(qInt)}, nil
 }
 
-func saveInMinio(file *os.File, bucket_name string, fileName string, fileResolution int64) error {
+func saveInMinio(file *os.File, bucketName string, fileName string, fileResolution int64) (string, error) {
 	cli := config.Api.Minio
-	log.Println(bucket_name)
-	err := cli.MakeBucket(context.Background(), bucket_name, minio.MakeBucketOptions{ObjectLocking: false})
+	err := cli.MakeBucket(context.Background(), bucketName, minio.MakeBucketOptions{ObjectLocking: false})
 	if err != nil {
-		log.Println("Errro in making bucket")
 		log.Println(err)
-		return err
+		return "", err
 	}
 	log.Println("Bucket created")
 	fileStat, err := file.Stat()
 	if err != nil {
 		log.Println(err)
-		return err
+		return "", err
 	}
-	_, err = cli.PutObject(context.Background(), bucket_name, fmt.Sprintf("%d_%s", fileResolution, fileName), file, fileStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
+	savedFile := fmt.Sprintf("%d_%s", fileResolution, fileName)
+	log.Printf("Filename: %s", savedFile)
+	_, err = cli.PutObject(context.Background(), bucketName, savedFile, file, fileStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream"})
 	if err != nil {
 		log.Println(err)
-		return err
+		return "", err
 	}
-	return nil
+	return savedFile, nil
 }
 
 func makeBucketName(name string, idUsr int, idVid int, createdAt string) (string, error) {
@@ -140,31 +147,8 @@ func makeBucketName(name string, idUsr int, idVid int, createdAt string) (string
 		return "", err
 	}
 	createdAt = createdAt[:len(createdAt)-3]
-	return fmt.Sprintf("usr%d%s%d%s", idUsr, name, idVid, reg.ReplaceAllString(createdAt, "")), nil
+	return fmt.Sprintf("usr%d%s%d%s.mp4", idUsr, name, idVid, reg.ReplaceAllString(createdAt, "")), nil
 
-}
-
-func sendEncodeRequest(bucketName string, format int64, filename string) {
-	log.Println("Sending encode request")
-
-	formData := url.Values{
-		"bucket_name": {bucketName},
-		"format":      {fmt.Sprintf("%d", format)},
-		"filename":    {filename},
-	}
-
-	resp, err := http.PostForm("http://video_encoder:3001/encode", formData)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Printf("Request result: %s \n", string(body))
 }
 
 /* Utils for query */
@@ -173,14 +157,9 @@ func scanVideoRow(stmt string, val string) models.Video {
 
 	row := (*config.Api.Db).QueryRow(stmt, val)
 	err := row.Scan(&vid.Id, &vid.Name, &vid.Duration, &vid.User_id, &vid.Source, &vid.Created_at, &vid.View, &vid.Enabled)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return models.Video{}
-		} else {
-			panic(err)
-		}
+	if err != nil && err == sql.ErrNoRows {
+		return models.Video{}
 	}
-
 	return vid
 }
 
@@ -201,7 +180,6 @@ func idOrName(user string, w http.ResponseWriter) (string, error) {
 			return "", err
 		}
 		return id, nil
-	} else {
-		return user, nil
 	}
+	return user, nil
 }

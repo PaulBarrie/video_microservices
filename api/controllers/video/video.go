@@ -20,7 +20,6 @@ import (
 func CreateVideo(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	check5 := utils.Check500(w)
-	//source := r.Header.Get("source")
 	token := r.FormValue("token")
 	id := mux.Vars(r)["id"]
 

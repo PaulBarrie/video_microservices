@@ -21,7 +21,8 @@ func isUnameAvailable(uname string) bool {
 
 /* Query single row */
 
-func getUserById(id string) models.User {
+//ReqUserByID retrieves a user in DB with a given ID.
+func ReqUserByID(id string) models.User {
 	sqlStatement := `SELECT * FROM user WHERE id = ?;`
 
 	return scanUserRow(sqlStatement, id)
@@ -48,20 +49,20 @@ func getUserByPseudo(uname string) models.User {
 /* Query for update */
 
 func queryOnUpdate(fields map[string]string, id string) error {
-	q_set := ""
-	empty_fields := 0
+	qSet := ""
+	emptyFields := 0
 	for key, val := range fields {
 		if val != "" {
-			q_set += key + " = '" + val + "', "
+			qSet += key + " = '" + val + "', "
 		} else {
-			empty_fields++
+			emptyFields++
 		}
-		if empty_fields == 4 {
+		if emptyFields == 4 {
 			return nil
 		}
 	}
-	q_set = q_set[:len(q_set)-2]
-	stmt := "UPDATE user SET " + q_set + " WHERE id = ?;"
+	qSet = qSet[:len(qSet)-2]
+	stmt := "UPDATE user SET " + qSet + " WHERE id = ?;"
 	fmt.Println(stmt)
 	_, err := (*config.Api.Db).Exec(stmt, id)
 

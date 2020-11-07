@@ -9,6 +9,7 @@ import (
 
 	"config"
 	"controllers/utils"
+
 	"github.com/gorilla/mux"
 )
 
@@ -99,7 +100,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "[500]- Error: internal server error", http.StatusInternalServerError)
 		return
 	}
-	user := getUserById(id)
+	user := ReqUserByID(id)
 	/* Send response */
 	js, _ := json.Marshal(utils.RespUser{"ok", user})
 
@@ -133,7 +134,8 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func GetUserById(w http.ResponseWriter, r *http.Request) {
+//GetUserByID handles the route to retriev an user with a given ID.
+func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	id := mux.Vars(r)["id"]
 
@@ -142,7 +144,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	/* Make query */
-	user := getUserById(id)
+	user := ReqUserByID(id)
 	/* Send response */
 	js, _ := json.Marshal(utils.RespUser{"ok", user})
 

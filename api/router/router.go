@@ -23,7 +23,7 @@ func InitializeRouter() *mux.Router {
 	router.HandleFunc("/user/{id}", user.DeleteUser).Methods("DELETE")
 	router.HandleFunc("/user/{id}", user.UpdateUser).Methods("PUT")
 	router.HandleFunc("/users", user.GetUsers).Methods("GET")
-	router.HandleFunc("/user/{id}", user.GetUserById).Methods("GET")
+	router.HandleFunc("/user/{id}", user.GetUserByID).Methods("GET")
 	/* ROUTES FOR VIDEO */
 	router.HandleFunc("/user/{id}/video", video.CreateVideo).Methods("POST")
 	router.HandleFunc("/videos", video.GetVideoList).Methods("GET")
