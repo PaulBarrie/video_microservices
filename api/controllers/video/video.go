@@ -38,7 +38,7 @@ func CreateVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	/* Insert base video */
-	stmt, err := (*config.Api.Db).Prepare("INSERT INTO video ( name, duration, user_id, source, created_at, view, enabled) VALUES (?, ?, ?, ?, NOW(), ?, ?)")
+	stmt, err := (*config.API.Db).Prepare("INSERT INTO video ( name, duration, user_id, source, created_at, view, enabled) VALUES (?, ?, ?, ?, NOW(), ?, ?)")
 	if check5(err) {
 		return
 	}
@@ -51,7 +51,7 @@ func CreateVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	uidStr := strconv.FormatInt(uid, 10)
-	video := getVideoById(uidStr)
+	video := getVideoByID(uidStr)
 	videoP, err := upload(w, r, video)
 
 	if check5(err) {
@@ -67,7 +67,7 @@ func CreateVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	/* Send response */
-	video = getVideoById(uidStr)
+	video = getVideoByID(uidStr)
 	js, _ := json.Marshal(utils.RespVideo{"ok", video})
 
 	w.WriteHeader(http.StatusCreated)
@@ -140,7 +140,7 @@ func GetVideoListByUser(w http.ResponseWriter, r *http.Request) {
 func EncodeVideoByID(w http.ResponseWriter, r *http.Request) {
 	// grab the generated receipt.pdf file and stream it to browser
 	id := mux.Vars(r)["id"]
-	vid := getVideoById(id)
+	vid := getVideoByID(id)
 	streamPDFbytes, err := ioutil.ReadFile(vid.Source)
 	log.Println(r)
 	check5 := utils.Check500(w)
@@ -177,7 +177,7 @@ func UpdateVideo(w http.ResponseWriter, r *http.Request) {
 	if check5(err) {
 		return
 	}
-	video := getVideoById(uid)
+	video := getVideoByID(uid)
 	/* Send response */
 	js, _ := json.Marshal(utils.RespVideo{"ok", video})
 
@@ -190,7 +190,7 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	id := mux.Vars(r)["id"]
 	userID := ""
-	err := (*config.Api.Db).QueryRow("SELECT user_id FROM token WHERE code = ?", token).Scan(&userID)
+	err := (*config.API.Db).QueryRow("SELECT user_id FROM token WHERE code = ?", token).Scan(&userID)
 	check5 := utils.Check500(w)
 	if check5(err) {
 		return
@@ -200,7 +200,7 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "[401]- Unauthorized: you must be authentified !", http.StatusUnauthorized)
 		return
 	}
-	_, err = (*config.Api.Db).Exec("DELETE FROM video WHERE id=?", id)
+	_, err = (*config.API.Db).Exec("DELETE FROM video WHERE id=?", id)
 	if check5(err) {
 		return
 	}

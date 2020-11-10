@@ -5,6 +5,8 @@ import (
 	"config"
 	"controllers/user"
 	"fmt"
+	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"models"
@@ -12,7 +14,7 @@ import (
 	"net/mail"
 	"net/smtp"
 	"net/url"
-	"text/template"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -55,7 +57,8 @@ func sendEmailEncoding(usr models.User, videoName string) error {
 	header := make(map[string]string)
 	header["To"] = usr.Email
 	header["Subject"] = "[Do not reply]: your video is uploading"
-	content, err := getHTMLContent("/go/src/api/controllers/video/emails_template/encoding_email.tmpl", emailValues{usr.Username, videoName})
+	vals := EmailValues{Username: usr.Username, Videoname: videoName}
+	content, err := getHTMLContent("/go/src/api/controllers/video/emails_template/encode_beg.tmpl", vals)
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -71,7 +74,8 @@ func sendEmailEncoded(usr models.User, videoName string) error {
 	header := make(map[string]string)
 	header["To"] = usr.Email
 	header["Subject"] = "[Do not reply]: your video is uploaded"
-	content, err := getHTMLContent("/go/src/api/controllers/video/emails_template/encoded_email.tmpl", emailValues{usr.Username, videoName})
+	vals := EmailValues{Username: usr.Username, Videoname: videoName}
+	content, err := getHTMLContent("/go/src/api/controllers/video/emails_template/encode_end.tmpl", vals)
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -83,59 +87,90 @@ func sendEmailEncoded(usr models.User, videoName string) error {
 	return nil
 }
 
-func getHTMLContent(templateFile string, fields emailValues) ([]byte, error) {
-	t := template.New("action")
-	t, err := t.ParseFiles(templateFile)
+func getHTMLContent(templateFile string, fields EmailValues) (string, error) {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	t, err := template.New("T").ParseFiles(templateFile)
 	if err != nil {
 		log.Println(err)
-		return []byte{}, err
+		return "", err
 	}
-	var content bytes.Buffer
-	if err = t.Execute(&content, fields); err != nil {
-		log.Println(err)
-		return []byte{}, err
-	}
-	return content.Bytes(), nil
+	outC := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		if err := t.Execute(os.Stdout, fields); err != nil {
+			log.Println("Error in exec template")
+			log.Println(err)
+		}
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+	w.Close()
+	os.Stdout = old
+	out := <-outC
+
+	return out, nil
 
 }
-
-func sendEmail(content []byte, header map[string]string) error {
-
-	header["Content-Type"] = `text/html; charset="UTF-8"`
-	fromHeader := mail.Address{(*config.Api.Postfix).Name, (*config.Api.Postfix).Email}
+func sendEmail(content string, header map[string]string) error {
+	fromHeader := mail.Address{(*config.API.Smtp).Name, (*config.API.Smtp).Email}
 	from := fromHeader.String()
 	header["From"] = from
-
-	bMsg := content
-	c, err := smtp.Dial((*config.Api.Postfix).Addr)
-	if err != nil {
-		log.Println(err)
+	message := ""
+	for key, val := range header {
+		message += key + ":" + val + "\n"
+	}
+	// auth := smtp.PlainAuth("", (*config.API.Smtp).Email, (*config.API.Smtp).Password, (*config.API.Smtp).Addr)
+	if err := smtp.SendMail((*config.API.Smtp).Addr, nil, (*config.API.Smtp).Email, []string{header["To"]}, []byte(message)); err != nil {
+		log.Println("Error SendMail: ", err)
 		return err
 	}
-	defer c.Close()
-	if err = c.Mail(from); err != nil {
-		log.Println(err)
-		return err
-	}
-	w, err := c.Data()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = w.Write(bMsg)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	err = c.Quit()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+	log.Println("Email Sent!")
 	return nil
 }
 
-type emailValues struct {
-	username  string
-	videoname string
+// func sendEmail(content []byte, header map[string]string) error {
+// 	header["Content-Type"] = `text/html; charset="UTF-8"`
+
+// 	bMsg := content
+// 	log.Println(header)
+// 	log.Println((*config.API.Smtp).Addr)
+// 	c, err := smtp.Dial((*config.API.Smtp).Addr)
+// 	if err != nil {
+// 		log.Println("Error in Dial")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	defer c.Close()
+// 	if err = c.Mail(from); err != nil {
+// 		log.Println("Error in c.mail")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	w, err := c.Data()
+// 	if err != nil {
+// 		log.Println("Error in c.data")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	_, err = w.Write(bMsg)
+// 	if err != nil {
+// 		log.Println("Error in c.write")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	err = c.Quit()
+// 	if err != nil {
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	return nil
+// }
+
+//EmailValues defines the custom fiels that will be sent in the emails
+type EmailValues struct {
+	Username  string
+	Videoname string
 }

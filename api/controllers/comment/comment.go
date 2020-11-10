@@ -31,7 +31,7 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/* Make query */
-	row := (*config.Api.Db).QueryRow("INSERT INTO comment ( body, user_id, video_id) VALUES (?, ?, ?) SELECT LAST_INSERT_ID()", body, uid, vid)
+	row := (*config.API.Db).QueryRow("INSERT INTO comment ( body, user_id, video_id) VALUES (?, ?, ?) SELECT LAST_INSERT_ID()", body, uid, vid)
 	row.Scan(&cid)
 	/* Send response */
 	user_id, _ := strconv.Atoi(uid)
@@ -70,7 +70,7 @@ func GetCommentsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stmt := fmt.Sprintf("SELECT * FROM comment WHERE video_id = '%s';", video_id)
-	query, err := (*config.Api.Db).Query(stmt)
+	query, err := (*config.API.Db).Query(stmt)
 	check5 := utils.Check500(w)
 	if check5(err) {
 		return

@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+//Check400M allows to check for error 400
 func Check400M(w http.ResponseWriter) func(string, string) bool {
 	return func(x string, msg string) bool {
 		if x == "" {
@@ -17,6 +18,7 @@ func Check400M(w http.ResponseWriter) func(string, string) bool {
 	}
 }
 
+//Check500 allows to check for error 500
 func Check500(w http.ResponseWriter) func(error) bool {
 	return func(err error) bool {
 		if err != nil {
@@ -27,6 +29,7 @@ func Check500(w http.ResponseWriter) func(error) bool {
 	}
 }
 
+//Exit struct of  error code
 type Exit struct{ Code int }
 
 // exit code handler

@@ -35,7 +35,7 @@ func InitializeRouter() *mux.Router {
 	router.HandleFunc("/video/{id}/comment", comment.CreateComment).Methods("POST")
 	router.HandleFunc("/video/{id}/comments", comment.GetCommentsList).Methods("GET")
 	// Documentation
-	//router.PathPrefix("/docu").Handler(httpSwagger.WrapHandler)
+	// router.PathPrefix("/docu").Handler(httpSwagger.WrapHandler)
 
 	return router
 }

@@ -15,6 +15,7 @@ import (
 	"models"
 )
 
+//Authentify defines the route for yser auth
 func Authentify(w http.ResponseWriter, r *http.Request) {
 	login := r.FormValue("login")
 	password := r.FormValue("password")
@@ -28,91 +29,83 @@ func Authentify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "[400]- Bad request: password is missing", http.StatusBadRequest)
 		return
 	}
-	user_id := checkLoginDetails(login, password)
-	if user_id == -1 {
+	userID := checkLoginDetails(login, password)
+	if userID == -1 {
 		http.Error(w, "[403]- Forbidden: wrong login details", http.StatusForbidden)
 		return
-	} else if id := userHasToken(user_id); id != -1 {
-		err := removeToken(user_id)
+	} else if id := userHasToken(userID); id != -1 {
+		err := removeToken(userID)
 		if err != nil {
 			http.Error(w, "[500]- Error: internal server error", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	token := createToken(user_id)
+	token := createToken(userID)
 	registerToken(token)
-	token_reg, err := getTokenByUserId(user_id)
+	tokenReg, err := getTokenByUserID(userID)
 
 	if err != nil {
 		http.Error(w, "[500]- Error: internal server error", http.StatusInternalServerError)
 		return
 	}
-	js, _ := json.Marshal(RespToken{"ok", token_reg})
+	js, _ := json.Marshal(RespToken{"ok", tokenReg})
 	w.WriteHeader(http.StatusCreated)
 	w.Write(js)
 
 }
 
-/* Auth utility */
-func IsDoubleAuthentified(token string, id_in string) bool {
+//IsDoubleAuthentified allows to identify user with token and id
+func IsDoubleAuthentified(token string, idIn string) bool {
 	var id string
 	sqlStatement := `SELECT user_id FROM token WHERE code = ?;`
-	row := (*config.Api.Db).QueryRow(sqlStatement, token)
+	row := (*config.API.Db).QueryRow(sqlStatement, token)
 	err := row.Scan(&id)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
-		} else {
-			panic(err)
 		}
-	} else if id_in == id {
+	} else if idIn == id {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
+
+//IsAuthentified allows "to identify user with token onlt
 func IsAuthentified(token string) bool {
 	var id string
 	sqlStatement := `SELECT user_id FROM token WHERE code = ?;`
-	row := (*config.Api.Db).QueryRow(sqlStatement, token)
+	row := (*config.API.Db).QueryRow(sqlStatement, token)
 	err := row.Scan(&id)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false
-		} else {
-			panic(err)
 		}
 	}
-
 	return true
-
 }
 
 func checkLoginDetails(login string, pwd string) int {
 	stmt1 := `SELECT id FROM user WHERE email = ? AND password = ?;`
 	stmt2 := `SELECT id FROM user WHERE username = ? AND password = ?;`
 	pwd = HashPwd(pwd)
-	check1 := checkAndGetUserId(stmt1, login, pwd)
+	check1 := checkAndGetUserID(stmt1, login, pwd)
 	if check1 > -1 {
 		return check1
-	} else {
-		return checkAndGetUserId(stmt2, login, pwd)
 	}
+	return checkAndGetUserID(stmt2, login, pwd)
 }
 
-func checkAndGetUserId(stmt string, login string, pwd string) int {
+func checkAndGetUserID(stmt string, login string, pwd string) int {
 	var id int
-	row := (*config.Api.Db).QueryRow(stmt, login, pwd)
+	row := (*config.API.Db).QueryRow(stmt, login, pwd)
 	err := row.Scan(&id)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return -1
-		} else {
-			panic(err)
 		}
 	}
 
@@ -132,47 +125,42 @@ func createToken(id int) models.Token {
 
 /* Queries on token table */
 
-func userHasToken(user_id int) int {
+func userHasToken(userID int) int {
 	var id int
 	sqlStatement := `SELECT id FROM token WHERE user_id = ?;`
 
-	row := (*config.Api.Db).QueryRow(sqlStatement, user_id)
+	row := (*config.API.Db).QueryRow(sqlStatement, userID)
 	err := row.Scan(&id)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return -1
-		} else {
-			panic(err)
 		}
 	}
 	return id
 }
 
-func removeToken(user_id int) error {
-	del, err := (*config.Api.Db).Prepare("DELETE FROM token WHERE user_id=?;")
+func removeToken(userID int) error {
+	del, err := (*config.API.Db).Prepare("DELETE FROM token WHERE user_id=?;")
 	if err != nil {
 		return err
 	}
-	del.Exec(user_id)
+	del.Exec(userID)
 	return nil
 }
 
-func getTokenByUserId(usr_id int) (models.Token, error) {
+func getTokenByUserID(userID int) (models.Token, error) {
 	stmt := `SELECT * FROM token WHERE user_id = ?;`
 	token := models.Token{}
 
-	row := (*config.Api.Db).QueryRow(stmt, usr_id)
+	row := (*config.API.Db).QueryRow(stmt, userID)
 	err := row.Scan(&token.Id, &token.Code, &token.Expired_at, &token.User_id)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return models.Token{}, err
-		} else {
-			return models.Token{}, err
 		}
 	}
-
 	return token, nil
 }
 
@@ -180,7 +168,7 @@ func registerToken(token models.Token) {
 	query := fmt.Sprintf(
 		"INSERT INTO token (code, expired_at, user_id) VALUES ('%s', '%s', '%s');",
 		token.Code, (token.Expired_at).Format("2006-01-02 15:04:05"), strconv.Itoa(token.User_id))
-	insert, err := (*config.Api.Db).Query(query)
+	insert, err := (*config.API.Db).Query(query)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -188,8 +176,9 @@ func registerToken(token models.Token) {
 	defer insert.Close()
 }
 
+//HashPwd returns a sh256 hash of pwd
 func HashPwd(pwd string) string {
-	hash_pwd := sha256.Sum256([]byte(pwd))
+	hashPwd := sha256.Sum256([]byte(pwd))
 
-	return hex.EncodeToString(hash_pwd[:])
+	return hex.EncodeToString(hashPwd[:])
 }

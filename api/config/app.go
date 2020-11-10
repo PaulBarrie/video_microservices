@@ -10,20 +10,20 @@ import (
 )
 
 //Api defines utils cli & router
-var Api *App = &App{}
+var API *App = &App{}
 
-//App Struct defining Api var
+//App Struct defining API var
 type App struct {
 	Router  *mux.Router
 	Db      *sql.DB
 	Minio   *minio.Client
-	Postfix *PostfixCli
+	Smtp *SmtpCli
 }
 
 func init() {
-	Api.InitDB()
-	Api.ConnectMinio()
-	Api.InitPostfix()
+	API.InitDB()
+	API.ConnectMinio()
+	API.InitSmtp()
 }
 
 //Run the API

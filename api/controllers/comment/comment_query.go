@@ -6,7 +6,7 @@ import (
 )
 
 func getNumberOfCommentById(video string) (count int, err error) {
-	err = (*config.Api.Db).QueryRow("SELECT COUNT(*) FROM comment WHERE video_id = ?", video).Scan(&count)
+	err = (*config.API.Db).QueryRow("SELECT COUNT(*) FROM comment WHERE video_id = ?", video).Scan(&count)
 	if err != nil {
 		return -1, err
 	}
@@ -15,7 +15,7 @@ func getNumberOfCommentById(video string) (count int, err error) {
 
 func getComments(page int, ppage int) ([]models.Comment, error) {
 	count := 0
-	rows, err := (*config.Api.Db).Query("SELECT * FROM comment ORDER BY body LIMIT ?,?;", (ppage)*(page-1), ppage)
+	rows, err := (*config.API.Db).Query("SELECT * FROM comment ORDER BY body LIMIT ?,?;", (ppage)*(page-1), ppage)
 
 	res := make([]models.Comment, 0)
 	if err != nil {

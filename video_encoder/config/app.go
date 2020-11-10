@@ -8,17 +8,17 @@ import (
 	minio "github.com/minio/minio-go/v7"
 )
 
-//Api defines utils cli & router
-var Api *App = &App{}
+//API defines utils cli & router
+var API *App = &App{}
 
-//App Struct defining Api var
+//App Struct defining API var
 type App struct {
 	Router *mux.Router
 	Minio  *minio.Client
 }
 
 func init() {
-	Api.ConnectMinio()
+	API.ConnectMinio()
 }
 
 //Run the API

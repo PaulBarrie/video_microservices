@@ -119,7 +119,7 @@ func getVideoDetails(path string) (utils.VideoDetails, error) {
 }
 
 func saveInMinio(file *os.File, bucketName string, fileName string, fileResolution int64) (string, error) {
-	cli := config.Api.Minio
+	cli := config.API.Minio
 	err := cli.MakeBucket(context.Background(), bucketName, minio.MakeBucketOptions{ObjectLocking: false})
 	if err != nil {
 		log.Println(err)
@@ -155,7 +155,7 @@ func makeBucketName(name string, idUsr int, idVid int, createdAt string) (string
 func scanVideoRow(stmt string, val string) models.Video {
 	vid := models.Video{}
 
-	row := (*config.Api.Db).QueryRow(stmt, val)
+	row := (*config.API.Db).QueryRow(stmt, val)
 	err := row.Scan(&vid.Id, &vid.Name, &vid.Duration, &vid.User_id, &vid.Source, &vid.Created_at, &vid.View, &vid.Enabled)
 	if err != nil && err == sql.ErrNoRows {
 		return models.Video{}
@@ -169,7 +169,7 @@ func idOrName(user string, w http.ResponseWriter) (string, error) {
 		st := fmt.Sprintf(
 			"SELECT id FROM user WHERE username = '%s' OR email = '%s'",
 			user, user)
-		row, err := (*config.Api.Db).Query(st)
+		row, err := (*config.API.Db).Query(st)
 		if err != nil {
 			return "", err
 		}

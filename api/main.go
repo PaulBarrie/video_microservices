@@ -17,8 +17,8 @@ import (
 // @host localhost:3000
 // @BasePath
 func main() {
-	config.Api.Router = router.InitializeRouter()
+	config.API.Router = router.InitializeRouter()
 	fmt.Println("App running at 127.0.0.1:3000...")
-	config.Api.Run(":3000")
-	config.Api.Db.Close()
+	config.API.Run(":3000")
+	config.API.Db.Close()
 }

@@ -1,10 +1,11 @@
+{{define "T"}}
 <!DOCTYPE html>
 <html lang="en">
     <h1> MyYT: Your file successfully uploaded</h1>
 
-    <h5>Dear {{.username}}, </h5>
+    <h5>Dear {{.Username}}, </h5>
 
-    <p>We are pleased to inform you that your video {{.videoname}} has been
+    <p>We are pleased to inform you that your video {{.Videoname}} has been
         successfully uploaded and is now available on MyYt platform.</p>
     </p>
 
@@ -13,3 +14,4 @@
 
     <p> <i> This is an automatic email, please do not answer it. </i></p>
 </html>
+{{ end }}

@@ -19,7 +19,9 @@ down:
 nuke:
 	docker rmi $(docker image ls -q)
 
-
+start_search:
+	docker-compose up msql debezium kafka elasticsearch kibana
+	
 nuke_docker:
 	@echo "Rebuilding docker services from scratch..."
 

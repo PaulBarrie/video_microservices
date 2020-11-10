@@ -12,7 +12,7 @@ import (
 func scanUserRow(stmt string, val string) models.User {
 	usr := models.User{}
 
-	row := (*config.Api.Db).QueryRow(stmt, val)
+	row := (*config.API.Db).QueryRow(stmt, val)
 	err := row.Scan(&usr.Id, &usr.Username, &usr.Email, &usr.Pseudo, &usr.Password, &usr.Created_at)
 
 	if err != nil {
@@ -28,7 +28,7 @@ func scanUserRow(stmt string, val string) models.User {
 
 func isResultEmpty(stmt string, val string) bool {
 	var id int
-	row := (*config.Api.Db).QueryRow(stmt, val)
+	row := (*config.API.Db).QueryRow(stmt, val)
 	err := row.Scan(&id)
 
 	if err != nil {

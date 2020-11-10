@@ -51,7 +51,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	query := fmt.Sprintf(
 		"INSERT INTO user ( username, email, pseudo, password, created_at) VALUES ('%s', '%s', '%s', '%s', NOW());",
 		uname, email, pseudo, utils.HashPwd(password))
-	insert, err := (*config.Api.Db).Query(query)
+	insert, err := (*config.API.Db).Query(query)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -74,7 +74,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "[401]- Unauthorized: you must be authentified !", http.StatusUnauthorized)
 		return
 	}
-	_, err := (*config.Api.Db).Exec("DELETE FROM user WHERE id=?", id)
+	_, err := (*config.API.Db).Exec("DELETE FROM user WHERE id=?", id)
 	if err != nil {
 		http.Error(w, "[500]- Error: internal server error", http.StatusInternalServerError)
 		return

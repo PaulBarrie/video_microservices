@@ -7,7 +7,7 @@ import (
 
 /* Query utility functions */
 func getNumberOfVideos() (count int, err error) {
-	err = (*config.Api.Db).QueryRow("SELECT COUNT(*) FROM video").Scan(&count)
+	err = (*config.API.Db).QueryRow("SELECT COUNT(*) FROM video").Scan(&count)
 	if err != nil {
 		return -1, err
 	}
@@ -15,7 +15,7 @@ func getNumberOfVideos() (count int, err error) {
 }
 
 func getNumberOfVideosByUser(usr string) (count int, err error) {
-	err = (*config.Api.Db).QueryRow("SELECT COUNT(*) FROM video WHERE user_id = ?", usr).Scan(&count)
+	err = (*config.API.Db).QueryRow("SELECT COUNT(*) FROM video WHERE user_id = ?", usr).Scan(&count)
 	if err != nil {
 		return -1, err
 	}
@@ -24,7 +24,7 @@ func getNumberOfVideosByUser(usr string) (count int, err error) {
 
 func queryVideos(page int, ppage int) ([]models.Video, error) {
 	count := 0
-	rows, err := (*config.Api.Db).Query("SELECT * FROM video ORDER BY name LIMIT ?,?;", (ppage)*(page-1), ppage)
+	rows, err := (*config.API.Db).Query("SELECT * FROM video ORDER BY name LIMIT ?,?;", (ppage)*(page-1), ppage)
 
 	res := make([]models.Video, 0)
 	if err != nil {
@@ -47,21 +47,21 @@ func queryVideos(page int, ppage int) ([]models.Video, error) {
 }
 
 func queryOnUpdateVideos(fields map[string]string, id string) error {
-	q_set := ""
+	qSet := ""
 	for key, val := range fields {
 		if val != "" {
-			q_set += key + " = '" + val + "', "
+			qSet += key + " = '" + val + "', "
 		}
 	}
-	q_set = q_set[:len(q_set)-2]
-	stmt := "UPDATE video SET " + q_set + " WHERE id = ?;"
-	_, err := (*config.Api.Db).Exec(stmt, id)
+	qSet = qSet[:len(qSet)-2]
+	stmt := "UPDATE video SET " + qSet + " WHERE id = ?;"
+	_, err := (*config.API.Db).Exec(stmt, id)
 
 	return err
 }
 
 func getUserVideos(uid string, page int, ppage int) ([]models.Video, error) {
-	rows, err := (*config.Api.Db).Query("SELECT * FROM video WHERE user_id = ? AND enabled = 1 ORDER BY created_at DESC LIMIT ?,?;", uid, (ppage)*(page-1), ppage)
+	rows, err := (*config.API.Db).Query("SELECT * FROM video WHERE user_id = ? AND enabled = 1 ORDER BY created_at DESC LIMIT ?,?;", uid, (ppage)*(page-1), ppage)
 	res := make([]models.Video, 0)
 	count := 0
 	if err != nil {
@@ -83,7 +83,7 @@ func getUserVideos(uid string, page int, ppage int) ([]models.Video, error) {
 	return res, nil
 }
 
-func getVideoById(id string) models.Video {
+func getVideoByID(id string) models.Video {
 	sqlStatement := `SELECT * FROM video WHERE id = ?;`
 	return scanVideoRow(sqlStatement, id)
 }

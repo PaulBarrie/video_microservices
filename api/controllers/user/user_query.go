@@ -64,7 +64,7 @@ func queryOnUpdate(fields map[string]string, id string) error {
 	qSet = qSet[:len(qSet)-2]
 	stmt := "UPDATE user SET " + qSet + " WHERE id = ?;"
 	fmt.Println(stmt)
-	_, err := (*config.Api.Db).Exec(stmt, id)
+	_, err := (*config.API.Db).Exec(stmt, id)
 
 	return err
 }
@@ -73,7 +73,7 @@ func queryOnUpdate(fields map[string]string, id string) error {
 
 func queryUsers(page int, ppage int) ([]models.User, error) {
 	count := 0
-	rows, err := (*config.Api.Db).Query("SELECT * FROM user ORDER BY username LIMIT ?,?;", (ppage)*(page-1), ppage)
+	rows, err := (*config.API.Db).Query("SELECT * FROM user ORDER BY username LIMIT ?,?;", (ppage)*(page-1), ppage)
 
 	res := make([]models.User, 0)
 	if err != nil {
@@ -96,7 +96,7 @@ func queryUsers(page int, ppage int) ([]models.User, error) {
 }
 
 func getNumberOfUsers() (count int, err error) {
-	err = (*config.Api.Db).QueryRow("SELECT COUNT(*) FROM user").Scan(&count)
+	err = (*config.API.Db).QueryRow("SELECT COUNT(*) FROM user").Scan(&count)
 	if err != nil {
 		return -1, err
 	}

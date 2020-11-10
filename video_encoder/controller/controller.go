@@ -57,6 +57,7 @@ func encodeInMinio(bucketName string, maxQual int, fileName string) error {
 		log.Println(err)
 		return err
 	}
+
 	for quals[cmpt] < maxQual {
 		// Encode to the format specified by quals
 		target := fmt.Sprintf("%d_%s", quals[cmpt], fileBrut)
@@ -76,7 +77,7 @@ func encodeInMinio(bucketName string, maxQual int, fileName string) error {
 		}
 
 		// Save in minio
-		info, err := (*config.Api.Minio).PutObject(context.Background(), bucketName, target, file, -1 /*fileStat.Size()*/, minio.PutObjectOptions{ContentType: "application/octet-stream"})
+		info, err := (*config.API.Minio).PutObject(context.Background(), bucketName, target, file, -1 /*fileStat.Size()*/, minio.PutObjectOptions{ContentType: "application/octet-stream"})
 		if err != nil {
 			log.Println("Error in put object")
 			log.Println(err)
@@ -89,7 +90,7 @@ func encodeInMinio(bucketName string, maxQual int, fileName string) error {
 }
 
 func getFileInBucket(bucketName string, fileName string) error {
-	err := (*config.Api.Minio).FGetObject(context.Background(), bucketName, fileName, "/tmp/tmp_file.mp4", minio.GetObjectOptions{})
+	err := (*config.API.Minio).FGetObject(context.Background(), bucketName, fileName, "/tmp/tmp_file.mp4", minio.GetObjectOptions{})
 	if err != nil {
 		fmt.Println(err)
 		return err
