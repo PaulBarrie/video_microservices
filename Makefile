@@ -1,29 +1,61 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
-restart_dock: 
-	[ !-z "${1}"] && docker-compose restart || docker restart $1
+restart: 
+ifdef svc
+	make rm svc="$(svc)" && make up svc="$(svc)"
+else
+	docker-compose restart 
+endif
 
 rebuild:
 	 docker-compose up --build --force-recreate --no-deps $1
-	
-nice_message:
-	echo "Bravo Polo, tu gères ! Ton api est edispo sur le port 3000"
+
+ps:
+	docker-compose ps
 
 up:
-	docker-compose up $1
+ifdef svc
+	docker-compose up -d --build $(svc)
+else
+	docker-compose up -d --build
+endif
 
-down: 
+all: apis search 
+
+app:
+	docker-compose up -d --build app
+
+apis:
+	docker-compose up -d --build minio smtp api video_encoder
+
+db:
+	docker-compose up -d msql
+
+search: db
+	docker-compose up -d --build logstash elasticsearch 
+
+kafka_connect:
+	cd Docker/Debezium/mysql && ./reg_mysql_con.sh && echo "\n[+]Kafka connected to mysql\n" && cd ../es && ./reg_es_con.sh && echo "\n[+]Kafka connected to elasticsearch\n"
+
+
+dev: 
+	docker-compose up -d adminer kibana
+
+rm:
+ifdef svc
+	docker stop $(svc) && docker rm $(svc)
+else
 	docker-compose down
+endif
 
 nuke:
 	docker rmi $(docker image ls -q)
 
-start_search:
-	docker-compose up msql debezium kafka elasticsearch kibana
-	
 nuke_docker:
 	@echo "Rebuilding docker services from scratch..."
+
+
 
 doc:
 	docker exec $(API_GO) bash -c "swag init -g main.go"

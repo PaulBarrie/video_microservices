@@ -1,14 +1,8 @@
-pipeline:
-    batch: 
-        size: 
-        delay: 50
-    java_execution: true
-    unsafe_shutdown: true
-    plugin_classloaders: true
-config: 
-    reload:
-        automatic: true
-        interval: 5s
-    debug: true
+http.host: "0.0.0.0"
+xpack.monitoring.elasticsearch.hosts: [ "http://elasticsearch:9200" ]
 
-path.logs: /tmp/logstash/logs
+## X-Pack security credentials
+#
+xpack.monitoring.enabled: false
+xpack.monitoring.elasticsearch.username: elastic
+xpack.monitoring.elasticsearch.password: changeme

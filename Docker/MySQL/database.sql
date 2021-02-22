@@ -15,8 +15,16 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
 -- Schema mydb
 -- -----------------------------------------------------
 CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET latin1 ;
-USE `mydb` ;
 
+-- CREATE USER FOR DEBEZIUM
+GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'replicator' IDENTIFIED BY 'replpass';
+GRANT SELECT, LOCK TABLES, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'debezium' IDENTIFIED BY 'debezium_pwd';
+GRANT ALL PRIVILEGES ON mydb.* TO 'debezium'@'%';
+
+
+
+
+USE `mydb` ;
 -- -----------------------------------------------------
 -- Table `mydb`.`user`
 -- -----------------------------------------------------
@@ -119,5 +127,4 @@ CREATE TABLE IF NOT EXISTS `mydb`.`video_format` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = latin1;
-
 

@@ -8,7 +8,11 @@ export default {
       { hid: 'description', name: 'description', content: '' }
     ],
     link: [
-      { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+      {
+        rel: 'stylesheet',
+        href: 'https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css'
+      }
     ]
   },
 
@@ -29,10 +33,34 @@ export default {
 
   // Modules (https://go.nuxtjs.dev/config-modules)
   modules: [
-    // https://go.nuxtjs.dev/bootstrap
-    'bootstrap-vue/nuxt',
+    // https://go.nuxtjs.dev/buefy
+    'nuxt-buefy',
+    '@nuxtjs/axios',
+    '@nuxtjs/proxy',
+    '@nuxtjs/auth'
   ],
 
+  axios: {
+    // baseURL: 'http://api:3000',
+    proxy: true
+  },
+  proxy: {
+    '/api/': {
+      target: 'http://api:3000',
+    }
+  },
+
+  auth: {
+    strategies: {
+      local: {
+        endpoints: {
+          login: { url: 'login', method: 'post', propertyName: 'data.token' },
+          user: { url: 'me', method: 'get', propertyName: 'data' },
+          logout: false
+        }
+      }
+    }
+  },
   // Build Configuration (https://go.nuxtjs.dev/config-build)
   build: {
   }

@@ -1,17 +1,14 @@
 package video
 
 import (
-	"bytes"
 	"config"
 	"controllers/user"
 	"fmt"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"log"
 	"models"
 	"net/http"
-	"net/mail"
 	"net/smtp"
 	"net/url"
 	"os"
@@ -88,41 +85,34 @@ func sendEmailEncoded(usr models.User, videoName string) error {
 }
 
 func getHTMLContent(templateFile string, fields EmailValues) (string, error) {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
 	t, err := template.New("T").ParseFiles(templateFile)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		if err := t.Execute(os.Stdout, fields); err != nil {
-			log.Println("Error in exec template")
-			log.Println(err)
-		}
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	if err := t.Execute(os.Stdout, fields); err != nil {
+		log.Println("Error in exec template")
+		log.Println(err)
+	}
 	w.Close()
+	out, _ := ioutil.ReadAll(r)
 	os.Stdout = old
-	out := <-outC
-
-	return out, nil
+	return string(out[:]), nil
 
 }
+
 func sendEmail(content string, header map[string]string) error {
-	fromHeader := mail.Address{(*config.API.Smtp).Name, (*config.API.Smtp).Email}
-	from := fromHeader.String()
-	header["From"] = from
-	message := ""
-	for key, val := range header {
-		message += key + ":" + val + "\n"
-	}
-	// auth := smtp.PlainAuth("", (*config.API.Smtp).Email, (*config.API.Smtp).Password, (*config.API.Smtp).Addr)
+	// fromHeader := mail.Address{(*config.API.Smtp).Name, (*config.API.Smtp).Email}
+	header["Content-Type"] = `text/html; charset="UTF-8"`
+	// log.Println("CONTENT\n")
+	// log.Println(content)
+	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
+	subject := "Subject:" + header["Subject"] + "\n"
+	message := subject + mime + "\n\n" + content
+	// auth := smtp.PlainAuth("", (*config.API.Smtp).Username, (*config.API.Smtp).Password, (*config.API.Smtp).Addr)
 	if err := smtp.SendMail((*config.API.Smtp).Addr, nil, (*config.API.Smtp).Email, []string{header["To"]}, []byte(message)); err != nil {
 		log.Println("Error SendMail: ", err)
 		return err
@@ -131,41 +121,56 @@ func sendEmail(content string, header map[string]string) error {
 	return nil
 }
 
-// func sendEmail(content []byte, header map[string]string) error {
+// func sendEmail(bMsg []byte, header map[string]string) error {
 // 	header["Content-Type"] = `text/html; charset="UTF-8"`
 
-// 	bMsg := content
-// 	log.Println(header)
-// 	log.Println((*config.API.Smtp).Addr)
-// 	c, err := smtp.Dial((*config.API.Smtp).Addr)
+// 	auth := smtp.PlainAuth("", (*config.API.Smtp).Username, (*config.API.Smtp).Password, (*config.API.Smtp).Host)
+// 	tlsconfig := &tls.Config{
+// 		InsecureSkipVerify: true,
+// 		ServerName:         (*config.API.Smtp).Addr,
+// 	}
+
+// 	tlsDial, err := tls.Dial("tcp", (*config.API.Smtp).Addr, tlsconfig)
 // 	if err != nil {
 // 		log.Println("Error in Dial")
 // 		log.Println(err)
 // 		return err
 // 	}
-// 	defer c.Close()
-// 	if err = c.Mail(from); err != nil {
+
+// 	c, err := smtp.NewClient(tlsDial, (*config.API.Smtp).Host)
+// 	if err != nil {
+// 		log.Println("Error in creating client")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	if err = c.Auth(auth); err != nil {
+// 		log.Println("Error in auth")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	if err = c.Mail("contact@myyt.com"); err != nil {
 // 		log.Println("Error in c.mail")
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	if err = c.Rcpt(header["To"]); err != nil {
+// 		log.Println("Error in addressing email")
 // 		log.Println(err)
 // 		return err
 // 	}
 // 	w, err := c.Data()
 // 	if err != nil {
-// 		log.Println("Error in c.data")
+// 		log.Println("Error in creating data")
 // 		log.Println(err)
 // 		return err
 // 	}
 // 	_, err = w.Write(bMsg)
 // 	if err != nil {
-// 		log.Println("Error in c.write")
+// 		log.Println("Error in write")
 // 		log.Println(err)
 // 		return err
 // 	}
-// 	err = c.Quit()
-// 	if err != nil {
-// 		log.Println(err)
-// 		return err
-// 	}
+// 	c.Quit()
 // 	return nil
 // }
 

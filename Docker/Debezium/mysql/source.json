@@ -1,0 +1,16 @@
+{
+    "name": "mydb-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+        "tasks.max": "1",
+        "database.hostname": "myyt-sql",
+        "database.port": "3306",
+        "database.user": "debezium",
+        "database.password": "debezium_pwd",
+        "database.server.id": "1",
+        "database.server.name": "dbserver1",
+        "table.include.list": "mydb.video",
+        "database.history.kafka.bootstrap.servers": "kafka:9092",
+        "database.history.kafka.topic": "dbhistory.mydb"
+    }
+}

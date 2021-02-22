@@ -1,7 +1,4 @@
-FROM mysql:5.7
+FROM mysql:8.0
 
-VOLUME ["/var/lib/mysql"]
+COPY mysql.cnf /etc/mysql/conf.d
 COPY database.sql /docker-entrypoint-initdb.d/database.sql
-
-
-EXPOSE 3306

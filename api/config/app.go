@@ -14,16 +14,16 @@ var API *App = &App{}
 
 //App Struct defining API var
 type App struct {
-	Router  *mux.Router
-	Db      *sql.DB
-	Minio   *minio.Client
-	Smtp *SmtpCli
+	Router *mux.Router
+	Db     *sql.DB
+	Minio  *minio.Client
+	Smtp   *SmtpCli
 }
 
 func init() {
 	API.InitDB()
 	API.ConnectMinio()
-	API.InitSmtp()
+	API.InitSMTP()
 }
 
 //Run the API

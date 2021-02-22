@@ -13,13 +13,13 @@ type SmtpCli struct {
 	Name     string
 }
 
-//InitSmtp init Smtp client
-func (a *App) InitSmtp() {
+//InitSMTP init Smtp client
+func (a *App) InitSMTP() {
 	a.Smtp = &SmtpCli{
-		Host:     os.Getenv("SMTP_CONTAINER"),
-		Port:     "25",
+		Host:     os.Getenv("SMTP_HOST"),
+		Port:     os.Getenv("SMTP_PORT"),
 		Username: os.Getenv("SMTP_USER"),
-		Password: os.Getenv("SMTP_PWD"),
+		Password: os.Getenv("PASSWORD"),
 		Email:    os.Getenv("SMTP_EMAIL"),
 		Name:     os.Getenv("SMTP_NAME"),
 	}

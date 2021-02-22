@@ -4,15 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "nuxt",
+    "docker": "npm run dev",
     "build": "nuxt build",
     "start": "nuxt start",
     "generate": "nuxt generate"
   },
   "dependencies": {
-    "bootstrap": "^4.5.2",
-    "bootstrap-vue": "^2.17.3",
+    "@nuxtjs/auth": "^4.5.1",
+    "@nuxtjs/axios": "^5.3.1",
+    "@nuxtjs/proxy": "^2.0.1",
     "core-js": "^3.6.5",
-    "nuxt": "^2.14.6"
+    "nuxt": "^2.14.7",
+    "nuxt-buefy": "^0.4.3"
   },
   "devDependencies": {}
 }

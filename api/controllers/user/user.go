@@ -61,11 +61,11 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	/* Send response */
 
 	js, _ := json.Marshal(utils.RespUser{"ok", user})
-
 	w.WriteHeader(http.StatusCreated)
 	w.Write(js)
 }
 
+//DeleteUser allows to delete account
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	id := mux.Vars(r)["id"]
