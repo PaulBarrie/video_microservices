@@ -12,14 +12,13 @@ import (
 //InitDB init mysql client
 func (a *App) InitDB() {
 
-	var user string = os.Getenv("DB_ROOT")
-	var pwd string = os.Getenv("DB_ROOT_PWD")
-	var dbName string = os.Getenv("DB_NAME")
-	var addr string = os.Getenv("DB_ADDRESS")
+	var user string = os.Getenv("MYSQL_HOST")
+	var pwd string = os.Getenv("MYSQL_ROOT_PASSWORD")
+	var dbName string = os.Getenv("MYSQL_DATABASE")
+	var addr string = os.Getenv("MYSQL_HOST")
 	//var port string = os.Getenv("DB_PORT")
 
 	var uri string = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local", user, pwd, addr, dbName)
-	// var uri string = fmt.Sprintf("%s:%s@tcp(127.0.0.1:33060)/%s?charset=utf8&parseTime=True&loc=Local", user, pwd/*, addr port,*/, db_name)
 
 	db, err := sql.Open("mysql", uri)
 

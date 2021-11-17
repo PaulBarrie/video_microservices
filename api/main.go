@@ -1,8 +1,9 @@
 package main
 
 import (
-	"config"
 	"fmt"
+	"os"
+	"config"
 	"router"
 )
 
@@ -18,7 +19,7 @@ import (
 // @BasePath
 func main() {
 	config.API.Router = router.InitializeRouter()
-	fmt.Println("App running at localhost:3000...")
-	config.API.Run(":3000")
+	fmt.Println("App running on port 3000...")
+	config.API.Run(fmt.Sprintf(":%s", os.Getenv("API_PORT")))
 	config.API.Db.Close()
 }

@@ -1,24 +1,24 @@
 version: '3.4'
 
 services:
-  app:
-    build:
-      context: ./app
-      args:
-        HOST: 0.0.0.0
-        PORT: 5000
-        API_URL: http://api:3000/
-    command: npm run docker
-    ports:
-      - ${APP_PORT}:${APP_PORT}
-    restart: on-failure
+  video_encoder:
+    build:  
+      context: ./video_encoder
+    depends_on: 
+      - minio
     volumes:
-      - ./app:/usr/src/app
-    working_dir: /usr/src/app
+      - ./video_encoder:/home/api 
+      - ./data/videos_store:/home/videos_store 
+    env_file: 
+       - .env
+    ports:
+      - "${ENCODER_PORT}:${ENCODER_PORT}"
+    #restart: unless-stopped
     networks: 
-      - frontend
-      - search
-    container_name: myyt-app
+      - backend
+    working_dir: /go/src/api
+    command: bash -c "go run main.go"
+    container_name: myyt-encoder
 
   #service for yt api
   api:
@@ -43,62 +43,35 @@ services:
 
   #service for database
   msql:
-    build:
-      context: ./Docker/MySQL
+    image: mysql:8.0.26
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PWD}
-      MYSQL_DATABASE: ${DB_NAME}
-      # MYSQL_USER: ${DB_USER}
-      # MYSQL_PASSWORD: ${DB_USER_PWD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
     ports:
-      - "${DB_PORT}:3306"    
+      - "${MYSQL_PORT}:3306"    
     networks: 
        - backend
        - search
     volumes: 
-      - ./Data/mysql:/var/lib/mysql
-      - ./Docker/MySQL:/etc/mysql/conf.d
-
-    command: --wait-timeout=28800
+      - ./data/mysql:/var/lib/mysql
     container_name: ${MYSQL_CONTAINER}
-    hostname: msql
+    hostname: ${MYSQL_HOST}
 
   minio:
     image: minio/minio
     ports:
         - "9999:9000"
-    env_file: minio.env
+    env_file: .env
     volumes:
-        - ./Data/videos_store:/export
+        - ./data/videos_store:/export
     command: minio server /export
     container_name: ${MINIO_CONTAINER}
     networks:
       backend:
         aliases: 
           - ${MINIO_CONTAINER}
-    container_name: ${MINIO_CONTAINER}
-    
-  video_encoder:
-    build:  
-      context: ./video_encoder
-    depends_on: 
-      - minio
-    volumes:
-      - ./video_encoder:/home/api 
-      - ./Data/videos_store:/home/videos_store 
-    env_file: 
-       - .env
-    ports:
-      - "${ENCODER_PORT}:${ENCODER_PORT}"
-    depends_on:
-      - minio
-      - api
-    #restart: unless-stopped
-    networks: 
-      - backend
-    working_dir: /go/src/api
-    command: bash -c "go run main.go"
-    container_name: myyt-encoder
+
 
   smtp:
     image: djfarrelly/maildev
@@ -114,85 +87,11 @@ services:
     networks: 
       - backend
 
-  logstash:
-    build:
-      context: ./Docker/Logstash
-    volumes:
-      - type: bind
-        source: ./Docker/Logstash/config/logstash.yml
-        target: /usr/share/logstash/config/logstash.yml
-        read_only: true
-      - type: bind
-        source: ./Docker/Logstash/pipeline
-        target: /usr/share/logstash/pipeline
-        read_only: true
-    restart: on-failure
-    command: bin/logstash -f /opt/logstash/pipeline/logstash.conf
-    depends_on: 
-      - elasticsearch
-      - msql
-    ports:
-      - "9600:9600"
-      - "7777:7777"
-    networks:
-      - search
-    container_name: logstash
-
-
-  elasticsearch:
-    image: elasticsearch:6.8.9
-    ports:
-      - "9200:9200"
-    networks:
-      - frontend
-      - search
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    cap_add:
-      - IPC_LOCK
-    environment:
-      - xpack.security.enabled=false
-      - discovery.type=single-node
-    volumes:
-      - type: bind
-        source: ./Data/elasticsearch
-        target: /usr/share/elasticsearch/data
-      # - ./Docker/Elasticsearch/es-conf.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-    container_name: elasticsearch
-
-  kibana:
-    image: kibana:6.8.9
-    networks:
-      - search
-    restart: on-failure
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:${ELASTICSEARCH_HOST_HTTP_PORT}
-    depends_on:
-      - elasticsearch
-    ports:
-      - 5601:5601
-    container_name: kibana
-
-  #service for adminer
-  adminer:
-    image: adminer
-    restart: on-failure
-    depends_on:
-      - msql
-    ports:
-      - 8000:8080
-    container_name: adminer
-
 networks:
   backend:
     driver: bridge
   frontend:
     driver: bridge
-  search:
+  search: 
     driver: bridge
 

@@ -1,0 +1,31 @@
+FROM alpine:3.14.3  as base
+
+USER root
+
+# Install trivy
+RUN apk update && apk add --no-cache bash openssh git make musl-dev go su-exec \
+    --no-cache autoconf automake libtool gettext gettext-dev make g++ texinfo curl ffmpeg \
+    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/master/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+RUN addgroup -S docker &&\
+    adduser -S docker $USER
+
+ENV GOROOT /usr/lib/go 
+ENV GOPATH /go 
+ENV PATH "/opt/gtk/bin:${PATH}"
+ENV GO111MODULE on
+
+WORKDIR ${GOPATH}/src
+
+ADD src .
+# RUN go install cve-report
+RUN go mod tidy &&\
+    go mod vendor &&\
+    go build
+
+FROM base
+
+WORKDIR /app
+COPY --from=base /go/bin/main . 
+
+ENTRYPOINT ["sh"]

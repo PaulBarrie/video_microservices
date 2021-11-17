@@ -10,9 +10,9 @@ import (
 )
 
 func (a *App) ConnectMinio() {
-	endpoint := os.Getenv("MINIO_CONTAINER")
-	accessKeyID := os.Getenv("MINIO_ACCESS")
-	secretAccessKey := os.Getenv("MINIO_SECRET")
+	endpoint := os.Getenv("MINIO_HOST")
+	accessKeyID := os.Getenv("MINIO_ROOT_USER")
+	secretAccessKey := os.Getenv("MINIO_ROOT_PASSWORD")
 	useSSL := false
 	endpoint = fmt.Sprintf("%s:%s", endpoint, "9000")
 	// Initialize minio client object.

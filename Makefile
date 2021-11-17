@@ -7,12 +7,15 @@ ifdef svc
 else
 	docker-compose restart 
 endif
+.PHONY: restart
 
 rebuild:
 	 docker-compose up --build --force-recreate --no-deps $1
+.PHONY: rebuild
 
 ps:
 	docker-compose ps
+.PHONY: ps
 
 up:
 ifdef svc
@@ -20,27 +23,7 @@ ifdef svc
 else
 	docker-compose up -d --build
 endif
-
-all: apis search 
-
-app:
-	docker-compose up -d --build app
-
-apis:
-	docker-compose up -d --build minio smtp api video_encoder
-
-db:
-	docker-compose up -d msql
-
-search: db
-	docker-compose up -d --build logstash elasticsearch 
-
-kafka_connect:
-	cd Docker/Debezium/mysql && ./reg_mysql_con.sh && echo "\n[+]Kafka connected to mysql\n" && cd ../es && ./reg_es_con.sh && echo "\n[+]Kafka connected to elasticsearch\n"
-
-
-dev: 
-	docker-compose up -d adminer kibana
+.PHONY: up
 
 rm:
 ifdef svc
@@ -48,17 +31,9 @@ ifdef svc
 else
 	docker-compose down
 endif
+.PHONY: rm
 
 nuke:
 	docker rmi $(docker image ls -q)
+.PHONY: nuke
 
-nuke_docker:
-	@echo "Rebuilding docker services from scratch..."
-
-
-
-doc:
-	docker exec $(API_GO) bash -c "swag init -g main.go"
-
-docu: doc restart
-	@echo "Restart api"

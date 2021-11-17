@@ -1,8 +1,0 @@
-SMTP_DOMAIN=mail.my-yt.io
-SMTP_USER=admin
-SMTP_PASSWORD=etna
-SMTP_CONTAINER=myyt-smtp
-SMTP_PORT=1020
-MAILHOG_PORT=8025
-SMTP_EMAIL=contact@my-yt.com
-SMTP_NAME=My-YT_Team

@@ -1,36 +1,31 @@
-FROM golang:1.15-alpine as builder
+FROM alpine:latest
 
-RUN apk update && apk upgrade && \
-apk add --no-cache bash git openssh
-RUN apk add --no-cache autoconf automake libtool gettext gettext-dev make g++ texinfo curl ffmpeg
-RUN apk add git
+USER root
 
-# Add Maintainer Info
-LABEL maintainer="<PaulBarrie <barrie_p@etna-alternance.net>"
-ENV GO111MODULE=on
+RUN addgroup -S docker &&\
+    adduser -S docker $USER
 
-COPY main.go /go/src/api/
-WORKDIR /go/src/api
-COPY . /usr/local/go/src
+ENV GOROOT /usr/lib/go 
+ENV GOPATH /go 
+ENV PATH "/opt/gtk/bin:${PATH}"
+ENV GO111MODULE on
+WORKDIR /root
+RUN wget https://github.com/emcrisostomo/fswatch/releases/download/1.14.0/fswatch-1.14.0.tar.gz &&\
+    tar -xvzf fswatch-1.14.0.tar.gz
 
+WORKDIR /root/fswatch-1.14.0
+RUN ./configure && make && make install
 
+# Configure Go
 
-COPY go.mod go.sum ./
+RUN mkdir -p ${GOPATH}/src/cve-report ${GOPATH}/bin/cv-report
 
-# Vendoring dependencies
-RUN go mod tidy
-RUN go mod vendor
+WORKDIR ${GOPATH}/src
+
 COPY . .
+# RUN go install cve-report
+RUN go mod tidy &&\
+    go mod vendor
 
-# WORKDIR /root
-# RUN wget https://github.com/emcrisostomo/fswatch/releases/download/1.14.0/fswatch-1.14.0.tar.gz
-# RUN tar -xvzf fswatch-1.14.0.tar.gz
-# WORKDIR /root/fswatch-1.14.0
-# RUN ./configure
-# RUN make
-# RUN make install
-
-# RUN mkdir -p /go/src/api
-
-WORKDIR /go/src/api
-EXPOSE 3000
+ENTRYPOINT ["make"]
+CMD [ "serve" ]
